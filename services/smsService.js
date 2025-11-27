@@ -12,22 +12,23 @@ class SMSService {
     const {
       TWILIO_ACCOUNT_SID,
       TWILIO_AUTH_TOKEN,
-      TWILIO_PHONE_NUMBER
+      TWILIO_PHONE_NUMBER,
+      TWILIO_WHATSAPP_NUMBER
     } = process.env;
 
-    // Check if SMS is configured
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-      console.warn('SMS service not configured. Missing Twilio credentials.');
+    // Check if WhatsApp messaging is configured
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || (!TWILIO_PHONE_NUMBER && !TWILIO_WHATSAPP_NUMBER)) {
+      console.warn('SMS/WhatsApp service not configured. Missing Twilio credentials.');
       this.isConfigured = false;
       return;
     }
 
     try {
       this.client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-      this.fromNumber = TWILIO_PHONE_NUMBER;
+      this.fromNumber = TWILIO_WHATSAPP_NUMBER || TWILIO_PHONE_NUMBER;
       this.isConfigured = true;
     } catch (error) {
-      console.error('Failed to initialize SMS service:', error.message);
+      console.error('Failed to initialize SMS/WhatsApp service:', error.message);
       this.isConfigured = false;
     }
   }
@@ -65,7 +66,7 @@ class SMSService {
 
   async sendSMS({ to, message }) {
     if (!this.isConfigured || !this.client) {
-      throw new Error('SMS service is not configured');
+      throw new Error('SMS/WhatsApp service is not configured');
     }
 
     if (!to) {
@@ -76,18 +77,27 @@ class SMSService {
       throw new Error('Message is required');
     }
 
-    // Check message length (SMS limit is 1600 characters for Twilio)
+    // Check message length (WhatsApp limit is 1600 characters for Twilio)
     if (message.length > 1600) {
-      throw new Error('Message exceeds SMS character limit (1600 characters)');
+      throw new Error('Message exceeds WhatsApp character limit (1600 characters)');
     }
 
     try {
       const formattedPhone = this.formatPhoneNumber(to);
-      
+      if (!formattedPhone) {
+        throw new Error('Invalid phone number supplied for WhatsApp delivery');
+      }
+      const from = this.fromNumber.startsWith('whatsapp:')
+        ? this.fromNumber
+        : `whatsapp:${this.fromNumber}`;
+      const toWhatsApp = formattedPhone.startsWith('whatsapp:')
+        ? formattedPhone
+        : `whatsapp:${formattedPhone}`;
+
       const result = await this.client.messages.create({
         body: message,
-        from: this.fromNumber,
-        to: formattedPhone
+        from,
+        to: toWhatsApp
       });
 
       return {
@@ -96,14 +106,14 @@ class SMSService {
         status: result.status
       };
     } catch (error) {
-      console.error('SMS send error:', error);
-      throw new Error(`Failed to send SMS: ${error.message}`);
+      console.error('WhatsApp send error:', error);
+      throw new Error(`Failed to send WhatsApp message: ${error.message}`);
     }
   }
 
   async verifyConnection() {
     if (!this.isConfigured || !this.client) {
-      return { success: false, message: 'SMS service is not configured' };
+      return { success: false, message: 'SMS/WhatsApp service is not configured' };
     }
 
     try {
@@ -111,7 +121,7 @@ class SMSService {
       const account = await this.client.api.accounts(this.client.username).fetch();
       return { 
         success: true, 
-        message: 'SMS service is ready',
+        message: 'WhatsApp service is ready',
         accountStatus: account.status
       };
     } catch (error) {

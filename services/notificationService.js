@@ -4,7 +4,7 @@ import smsService from './smsService.js';
 
 class NotificationService {
   /**
-   * Send notification via email, SMS, or both
+   * Send notification via email, WhatsApp (Twilio), or both
    * @param {Object} options
    * @param {string} options.type - 'email', 'sms', or 'both'
    * @param {Object} options.recipient - { email?, phone?, name? }
@@ -78,7 +78,7 @@ class NotificationService {
         }
       }
 
-      // Send SMS if needed
+      // Send WhatsApp if needed
       if (type === 'sms' || type === 'both') {
         if (recipient.phone) {
           try {
@@ -121,7 +121,7 @@ class NotificationService {
         errors.push(`Email: ${results.email.error}`);
       }
       if (results.sms && !results.sms.success) {
-        errors.push(`SMS: ${results.sms.error}`);
+        errors.push(`WhatsApp: ${results.sms.error}`);
       }
       if (errors.length > 0) {
         notification.error = errors.join('; ');

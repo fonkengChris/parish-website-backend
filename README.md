@@ -28,10 +28,11 @@ Optional - Email Service (SMTP):
 - `SMTP_FROM_EMAIL` - From email address (defaults to SMTP_USER)
 - `SMTP_FROM_NAME` - From name (defaults to "Parish Website")
 
-Optional - SMS Service (Twilio):
+Optional - WhatsApp Messaging (Twilio):
 - `TWILIO_ACCOUNT_SID` - Twilio account SID
 - `TWILIO_AUTH_TOKEN` - Twilio auth token
-- `TWILIO_PHONE_NUMBER` - Twilio phone number (E.164 format)
+- `TWILIO_WHATSAPP_NUMBER` - WhatsApp-enabled Twilio number (E.164 format)
+- `TWILIO_PHONE_NUMBER` - Optional fallback voice/SMS number
 
 4. Run the server:
 ```bash

@@ -1,13 +1,13 @@
 # Notification Service
 
-A unified notification service that supports both email and SMS notifications.
+A unified notification service that supports both email and WhatsApp (via Twilio) notifications.
 
 ## Overview
 
 The notification service consists of three main components:
 
 1. **EmailService** (`emailService.js`) - Handles email notifications via SMTP
-2. **SMSService** (`smsService.js`) - Handles SMS notifications via Twilio
+2. **SMSService** (`smsService.js`) - Handles WhatsApp messaging via Twilio
 3. **NotificationService** (`notificationService.js`) - Unified interface for sending notifications
 
 ## Configuration
@@ -35,21 +35,23 @@ SMTP_FROM_NAME=Parish Website
 - SendGrid: `smtp.sendgrid.net:587`
 - Custom SMTP: Use your provider's settings
 
-### SMS Configuration (Twilio)
+### WhatsApp Configuration (Twilio)
 
 Set the following environment variables in your `.env` file:
 
 ```env
 TWILIO_ACCOUNT_SID=your-account-sid
 TWILIO_AUTH_TOKEN=your-auth-token
+TWILIO_WHATSAPP_NUMBER=+1234567890
+# Optional fallback if you also keep a voice/SMS number
 TWILIO_PHONE_NUMBER=+1234567890
 ```
 
-**Twilio Setup:**
+**Twilio WhatsApp Setup:**
 1. Sign up at https://www.twilio.com
-2. Get your Account SID and Auth Token from the dashboard
-3. Purchase a phone number or use a trial number
-4. Use E.164 format for phone numbers (e.g., +1234567890)
+2. Enable the WhatsApp Sandbox or connect an approved WhatsApp-enabled number
+3. Get your Account SID and Auth Token from the dashboard
+4. Use E.164 format for numbers (e.g., +1234567890)
 
 ## Usage
 
@@ -74,18 +76,18 @@ const result = await notificationService.sendNotification({
   htmlMessage: '<h1>Welcome!</h1><p>Thank you for joining!</p>' // Optional
 });
 
-// Send SMS
+// Send WhatsApp (type is still 'sms' for backward compatibility)
 const result = await notificationService.sendNotification({
   type: 'sms',
   recipient: {
     phone: '+1234567890',
     name: 'John Doe'
   },
-  subject: '', // Not used for SMS
+  subject: '', // Not used for WhatsApp
   message: 'Your prayer request has been received. Thank you!'
 });
 
-// Send both email and SMS
+// Send both email and WhatsApp
 const result = await notificationService.sendNotification({
   type: 'both',
   recipient: {
@@ -132,12 +134,12 @@ const status = await notificationService.getServiceStatus();
 ## API Endpoints
 
 ### GET /api/notifications/status
-Get the status of email and SMS services. Requires admin authentication.
+Get the status of email and WhatsApp services. Requires admin authentication.
 
 ### GET /api/notifications/history
 Get notification history with optional filters:
 - `status` - Filter by status (pending, sent, failed, partially_sent)
-- `type` - Filter by type (email, sms, both)
+- `type` - Filter by type (email, sms, both) — `sms` represents WhatsApp
 - `email` - Filter by recipient email
 - `phone` - Filter by recipient phone
 - `limit` - Number of results (default: 50)
@@ -181,13 +183,13 @@ Request body:
 
 Notifications are stored in the database with the following schema:
 
-- `type` - 'email', 'sms', or 'both'
+- `type` - 'email', 'sms', or 'both' (`sms` represents WhatsApp delivery)
 - `recipient` - Object with email, phone, and name
 - `subject` - Notification subject
 - `message` - Notification message
 - `status` - Overall status (pending, sent, failed, partially_sent)
 - `emailStatus` - Email delivery status
-- `smsStatus` - SMS delivery status
+- `smsStatus` - WhatsApp delivery status
 - `error` - Error message if failed
 - `metadata` - Additional metadata
 - `createdAt` - Timestamp
@@ -195,10 +197,10 @@ Notifications are stored in the database with the following schema:
 
 ## Error Handling
 
-The service gracefully handles missing configuration. If email or SMS services are not configured, they will log a warning but not crash the application. When sending notifications:
+The service gracefully handles missing configuration. If email or WhatsApp services are not configured, they will log a warning but not crash the application. When sending notifications:
 
 - If a service is not configured, it will throw an error
-- Partial failures are tracked (e.g., email sent but SMS failed)
+- Partial failures are tracked (e.g., email sent but WhatsApp failed)
 - All notifications are logged in the database for audit purposes
 
 ## Integration Examples
@@ -233,7 +235,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 });
 ```
 
-### Send SMS reminder for events
+### Send WhatsApp reminder for events
 
 ```javascript
 // In your event route or scheduler

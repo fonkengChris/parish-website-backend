@@ -90,7 +90,7 @@ router.post('/send',
         return res.status(400).json({ message: 'Email is required for email notifications' });
       }
       if ((type === 'sms' || type === 'both') && !recipient.phone) {
-        return res.status(400).json({ message: 'Phone is required for SMS notifications' });
+        return res.status(400).json({ message: 'Phone is required for WhatsApp notifications' });
       }
 
       const result = await notificationService.sendNotification({
@@ -143,7 +143,7 @@ router.post('/send-bulk',
           return res.status(400).json({ message: 'All recipients must have email for email notifications' });
         }
         if ((type === 'sms' || type === 'both') && !recipient.phone) {
-          return res.status(400).json({ message: 'All recipients must have phone for SMS notifications' });
+          return res.status(400).json({ message: 'All recipients must have phone for WhatsApp notifications' });
         }
       }
 
