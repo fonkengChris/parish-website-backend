@@ -35,6 +35,11 @@ const sermonSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  type: {
+    type: String,
+    enum: ['sermon', 'catechisis'],
+    default: 'sermon'
+  },
   isActive: {
     type: Boolean,
     default: true

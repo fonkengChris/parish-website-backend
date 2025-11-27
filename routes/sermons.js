@@ -4,10 +4,15 @@ import { authenticate, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
-// Get all active sermons (public)
+// Get all active sermons and catechisis (public)
 router.get('/', async (req, res) => {
   try {
-    const sermons = await Sermon.find({ isActive: true })
+    const { type } = req.query;
+    const query = { isActive: true };
+    if (type && (type === 'sermon' || type === 'catechisis')) {
+      query.type = type;
+    }
+    const sermons = await Sermon.find(query)
       .sort({ date: -1 })
       .limit(50);
     res.json(sermons);
@@ -16,10 +21,15 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Get all sermons (admin)
+// Get all sermons and catechisis (admin)
 router.get('/all', authenticate, requireAdmin, async (req, res) => {
   try {
-    const sermons = await Sermon.find().sort({ date: -1 });
+    const { type } = req.query;
+    const query = {};
+    if (type && (type === 'sermon' || type === 'catechisis')) {
+      query.type = type;
+    }
+    const sermons = await Sermon.find(query).sort({ date: -1 });
     res.json(sermons);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
