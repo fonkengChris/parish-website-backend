@@ -1,6 +1,7 @@
 import express from 'express';
 import GalleryItem from '../models/GalleryItem.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { validate, schemas } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -29,7 +30,7 @@ router.get('/all', authenticate, requireAdmin, async (req, res) => {
 });
 
 // Get single gallery item
-router.get('/:id', async (req, res) => {
+router.get('/:id', validate(schemas.idParam, 'params'), async (req, res) => {
   try {
     const galleryItem = await GalleryItem.findById(req.params.id)
       .populate('eventId', 'title');
@@ -43,7 +44,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create gallery item (admin)
-router.post('/', authenticate, requireAdmin, async (req, res) => {
+router.post('/', authenticate, requireAdmin, validate(schemas.galleryItem), async (req, res) => {
   try {
     const galleryItem = new GalleryItem(req.body);
     await galleryItem.save();
@@ -55,7 +56,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 });
 
 // Update gallery item (admin)
-router.put('/:id', authenticate, requireAdmin, async (req, res) => {
+router.put('/:id', authenticate, requireAdmin, validate(schemas.idParam, 'params'), validate(schemas.galleryItem), async (req, res) => {
   try {
     const galleryItem = await GalleryItem.findByIdAndUpdate(
       req.params.id,
@@ -72,7 +73,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 });
 
 // Delete gallery item (admin)
-router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
+router.delete('/:id', authenticate, requireAdmin, validate(schemas.idParam, 'params'), async (req, res) => {
   try {
     const galleryItem = await GalleryItem.findByIdAndDelete(req.params.id);
     if (!galleryItem) {

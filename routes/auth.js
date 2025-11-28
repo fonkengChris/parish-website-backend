@@ -1,14 +1,49 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import User from '../models/User.js';
 import Parishioner from '../models/Parishioner.js';
+import RefreshToken from '../models/RefreshToken.js';
 import { authenticate } from '../middleware/auth.js';
+import { loginRateLimiter } from '../middleware/rateLimiter.js';
+import { validatePassword } from '../utils/passwordValidation.js';
+import { validate, schemas } from '../middleware/validation.js';
+import { authLogger, errorLogger } from '../utils/logger.js';
 
 const router = express.Router();
 
+// Helper function to generate tokens
+const generateTokens = (user) => {
+  const accessToken = jwt.sign(
+    { 
+      userId: user._id, 
+      username: user.username, 
+      email: user.email,
+      role: user.role 
+    },
+    process.env.JWT_SECRET || 'fallback-secret',
+    { expiresIn: '15m' } // Short-lived access token
+  );
+
+  const refreshToken = crypto.randomBytes(64).toString('hex');
+  return { accessToken, refreshToken };
+};
+
+// Helper function to set secure cookie
+const setRefreshTokenCookie = (res, refreshToken) => {
+  const isProduction = process.env.NODE_ENV === 'production';
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: isProduction, // Only send over HTTPS in production
+    sameSite: isProduction ? 'strict' : 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/api/auth'
+  });
+};
+
 // Login (supports both username for admin/editor and email for parishioner)
-router.post('/login', async (req, res) => {
+router.post('/login', loginRateLimiter, validate(schemas.login), async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
@@ -26,31 +61,41 @@ router.post('/login', async (req, res) => {
       : await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
-      console.log('Login attempt failed: User not found', { username, email });
+      authLogger.warn({ username, email, ip: req.ip }, 'Login attempt failed: User not found');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      console.log('Login attempt failed: Password mismatch', { userId: user._id, username: user.username, email: user.email });
+      authLogger.warn({ userId: user._id, username: user.username, email: user.email, ip: req.ip }, 'Login attempt failed: Password mismatch');
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     
-    console.log('Login successful:', { userId: user._id, username: user.username, email: user.email, role: user.role });
+    authLogger.info({ userId: user._id, username: user.username, email: user.email, role: user.role, ip: req.ip }, 'Login successful');
 
-    const token = jwt.sign(
-      { 
-        userId: user._id, 
-        username: user.username, 
-        email: user.email,
-        role: user.role 
-      },
-      process.env.JWT_SECRET || 'fallback-secret',
-      { expiresIn: '7d' }
-    );
+    // Generate tokens
+    const { accessToken, refreshToken } = generateTokens(user);
 
+    // Save refresh token to database
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+
+    // Delete old refresh tokens for this user
+    await RefreshToken.deleteMany({ userId: user._id });
+
+    // Save new refresh token
+    await RefreshToken.create({
+      userId: user._id,
+      token: refreshToken,
+      expiresAt
+    });
+
+    // Set refresh token as secure HTTP-only cookie
+    setRefreshTokenCookie(res, refreshToken);
+
+    // Return access token in response body (client stores in memory/localStorage)
     res.json({
-      token,
+      accessToken,
       user: {
         id: user._id,
         username: user.username,
@@ -59,13 +104,13 @@ router.post('/login', async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    errorLogger.error({ err: error, ip: req.ip }, 'Login error');
     res.status(500).json({ message: 'Server error' });
   }
 });
 
 // Register new parishioner (public) - Creates both User and Parishioner
-router.post('/register', async (req, res) => {
+router.post('/register', validate(schemas.register), async (req, res) => {
   try {
     const {
       firstName,
@@ -82,7 +127,7 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Validate password length
+    // Validate password (parishioners: minimum 6 characters)
     if (password.length < 6) {
       return res.status(400).json({ 
         message: 'Password must be at least 6 characters long' 
@@ -191,8 +236,63 @@ router.get('/verify', authenticate, (req, res) => {
   res.json({ user: req.user });
 });
 
+// Refresh access token
+router.post('/refresh', async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({ message: 'Refresh token required' });
+    }
+
+    // Find refresh token in database
+    const tokenDoc = await RefreshToken.findOne({ token: refreshToken });
+    if (!tokenDoc || tokenDoc.expiresAt < new Date()) {
+      return res.status(401).json({ message: 'Invalid or expired refresh token' });
+    }
+
+    // Get user
+    const user = await User.findById(tokenDoc.userId);
+    if (!user) {
+      return res.status(401).json({ message: 'User not found' });
+    }
+
+    // Generate new access token
+    const { accessToken } = generateTokens(user);
+
+    res.json({ accessToken });
+  } catch (error) {
+    console.error('Refresh token error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Logout
+router.post('/logout', authenticate, async (req, res) => {
+  try {
+    const refreshToken = req.cookies?.refreshToken || req.body.refreshToken;
+    
+    if (refreshToken) {
+      await RefreshToken.deleteOne({ token: refreshToken });
+    }
+
+    // Clear refresh token cookie
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      path: '/api/auth'
+    });
+
+    res.json({ message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Change password (authenticated users only)
-router.post('/change-password', authenticate, async (req, res) => {
+router.post('/change-password', authenticate, validate(schemas.changePassword), async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
     const userId = req.user.userId;
@@ -204,17 +304,28 @@ router.post('/change-password', authenticate, async (req, res) => {
       });
     }
 
-    // Validate new password length
-    if (newPassword.length < 6) {
-      return res.status(400).json({ 
-        message: 'New password must be at least 6 characters long' 
-      });
-    }
-
-    // Find user
+    // Validate new password with strong rules (for admin/editor roles)
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Apply strong password rules for admin and editor roles
+    if (user.role === 'admin' || user.role === 'editor') {
+      const passwordValidation = validatePassword(newPassword);
+      if (!passwordValidation.isValid) {
+        return res.status(400).json({ 
+          message: 'Password does not meet requirements',
+          errors: passwordValidation.errors
+        });
+      }
+    } else {
+      // Parishioners: minimum 6 characters
+      if (newPassword.length < 6) {
+        return res.status(400).json({ 
+          message: 'New password must be at least 6 characters long' 
+        });
+      }
     }
 
     // Verify current password
@@ -238,6 +349,9 @@ router.post('/change-password', authenticate, async (req, res) => {
     // Update password
     user.passwordHash = hashedPassword;
     await user.save();
+
+    // Invalidate all refresh tokens for security
+    await RefreshToken.deleteMany({ userId: user._id });
 
     console.log('Password changed successfully:', { userId: user._id, role: user.role });
 

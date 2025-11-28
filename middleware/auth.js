@@ -2,8 +2,14 @@ import jwt from 'jsonwebtoken';
 
 export const authenticate = (req, res, next) => {
   try {
-    const token = req.headers.authorization?.split(' ')[1];
+    // Try to get token from Authorization header first
+    let token = req.headers.authorization?.split(' ')[1];
     
+    // If no token in header, try to get from query (for backward compatibility)
+    if (!token) {
+      token = req.query.token;
+    }
+
     if (!token) {
       return res.status(401).json({ message: 'No token provided' });
     }
@@ -12,7 +18,13 @@ export const authenticate = (req, res, next) => {
     req.user = decoded;
     next();
   } catch (error) {
-    res.status(401).json({ message: 'Invalid token' });
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token expired' });
+    }
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+    return res.status(401).json({ message: 'Authentication failed' });
   }
 };
 

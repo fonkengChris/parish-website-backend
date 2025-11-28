@@ -1,6 +1,7 @@
 import express from 'express';
 import MassSchedule from '../models/MassSchedule.js';
 import { authenticate, requireAdmin } from '../middleware/auth.js';
+import { validate, schemas } from '../middleware/validation.js';
 
 const router = express.Router();
 
@@ -34,7 +35,7 @@ router.get('/all', authenticate, requireAdmin, async (req, res) => {
 });
 
 // Get single schedule
-router.get('/:id', async (req, res) => {
+router.get('/:id', validate(schemas.idParam, 'params'), async (req, res) => {
   try {
     const schedule = await MassSchedule.findById(req.params.id)
       .populate('missionStation', 'name location');
@@ -48,7 +49,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create schedule (admin)
-router.post('/', authenticate, requireAdmin, async (req, res) => {
+router.post('/', authenticate, requireAdmin, validate(schemas.massSchedule), async (req, res) => {
   try {
     const schedule = new MassSchedule(req.body);
     await schedule.save();
@@ -60,7 +61,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
 });
 
 // Update schedule (admin)
-router.put('/:id', authenticate, requireAdmin, async (req, res) => {
+router.put('/:id', authenticate, requireAdmin, validate(schemas.idParam, 'params'), validate(schemas.massSchedule), async (req, res) => {
   try {
     const schedule = await MassSchedule.findByIdAndUpdate(
       req.params.id,
@@ -77,7 +78,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res) => {
 });
 
 // Delete schedule (admin)
-router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
+router.delete('/:id', authenticate, requireAdmin, validate(schemas.idParam, 'params'), async (req, res) => {
   try {
     const schedule = await MassSchedule.findByIdAndDelete(req.params.id);
     if (!schedule) {

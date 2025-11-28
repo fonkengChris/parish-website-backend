@@ -1,16 +1,16 @@
 import express from 'express';
+import cookieParser from 'cookie-parser';
+import { httpLogger } from '../middleware/requestLogger.js';
 
 export const setupMiddleware = (app) => {
+  // Request logging middleware (pino-http) - should be early in the chain
+  app.use(httpLogger);
+
+  // Cookie parser middleware (for refresh tokens)
+  app.use(cookieParser());
+
   // Body parser middleware
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
-
-  // Request logging middleware (development only)
-  if (process.env.NODE_ENV === 'development') {
-    app.use((req, res, next) => {
-      console.log(`${req.method} ${req.path}`);
-      next();
-    });
-  }
 };
 
