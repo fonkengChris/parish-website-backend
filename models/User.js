@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['admin', 'editor', 'parishioner'],
+    enum: ['admin', 'editor', 'priest', 'parish-priest', 'parishioner'],
     required: true
   },
   // One-to-one relationship with Parishioner (only for parishioner role)
@@ -47,6 +47,38 @@ userSchema.pre('validate', function(next) {
 
 userSchema.methods.comparePassword = async function(password) {
   return bcrypt.compare(password, this.passwordHash);
+};
+
+// Permission helper methods
+// Editor permissions: MassSchedule, Announcements, Events, Ministries, Gallery
+// Priest permissions: All editor permissions + Prayers, Sermons, LiturgicalColors
+// Parish-priest and Admin: All privileges (highest level)
+
+userSchema.methods.canAccess = function(resource) {
+  const role = this.role;
+  
+  // Highest level roles have access to everything
+  if (role === 'admin' || role === 'parish-priest') {
+    return true;
+  }
+  
+  // Editor permissions
+  const editorResources = ['MassSchedule', 'Announcements', 'Events', 'Ministries', 'Gallery'];
+  if (editorResources.includes(resource)) {
+    return role === 'editor' || role === 'priest' || role === 'parish-priest' || role === 'admin';
+  }
+  
+  // Priest-only permissions (in addition to editor permissions)
+  const priestResources = ['Prayers', 'Sermons', 'LiturgicalColors'];
+  if (priestResources.includes(resource)) {
+    return role === 'priest' || role === 'parish-priest' || role === 'admin';
+  }
+  
+  return false;
+};
+
+userSchema.methods.hasRole = function(...roles) {
+  return roles.includes(this.role);
 };
 
 export default mongoose.model('User', userSchema);
