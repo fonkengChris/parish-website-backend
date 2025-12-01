@@ -171,13 +171,24 @@ router.post('/register', validate(schemas.register), async (req, res) => {
     await user.save();
     
     // Log successful registration
-    console.log('Parishioner registered successfully:', {
+    authLogger.info({ userId: user._id, email: user.email, ip: req.ip }, 'Parishioner registered successfully');
+
+    // Generate tokens for automatic login
+    const { accessToken, refreshToken } = generateTokens(user);
+
+    // Save refresh token to database
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
+
+    // Save refresh token
+    await RefreshToken.create({
       userId: user._id,
-      parishionerId: parishioner._id,
-      email: user.email,
-      firstName: parishioner.firstName,
-      lastName: parishioner.lastName
+      token: refreshToken,
+      expiresAt
     });
+
+    // Set refresh token as secure HTTP-only cookie
+    setRefreshTokenCookie(res, refreshToken);
 
     // Send welcome message to new user
     try {
@@ -226,8 +237,9 @@ router.post('/register', validate(schemas.register), async (req, res) => {
     
     res.status(201).json({ 
       message: 'Registration successful! Welcome to our parish community.',
+      accessToken,
       user: {
-        _id: user._id,
+        id: user._id,
         email: user.email,
         role: user.role
       },
