@@ -9,7 +9,7 @@ const massScheduleSchema = new mongoose.Schema({
   dayOfWeek: {
     type: String,
     required: true,
-    enum: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    enum: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
   },
   time: {
     type: String,
