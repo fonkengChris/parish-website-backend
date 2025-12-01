@@ -12,7 +12,7 @@ const prayerSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    enum: ['morning', 'evening', 'general', 'special', 'saint', 'other'],
+    enum: ['morning', 'evening', 'devotions', 'general', 'marian', 'special', 'saint', 'other'],
     default: 'other'
   },
   isActive: {

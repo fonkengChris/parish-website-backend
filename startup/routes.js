@@ -12,6 +12,7 @@ import sermonRoutes from '../routes/sermons.js';
 import liturgicalColorRoutes from '../routes/liturgicalColor.js';
 import liturgicalColorOverridesRoutes from '../routes/liturgicalColorOverrides.js';
 import notificationRoutes from '../routes/notifications.js';
+import contactRoutes from '../routes/contact.js';
 
 export const setupRoutes = (app) => {
   // Health check endpoint
@@ -37,6 +38,7 @@ export const setupRoutes = (app) => {
   app.use('/api/liturgical-color', liturgicalColorRoutes);
   app.use('/api/liturgical-color-overrides', liturgicalColorOverridesRoutes);
   app.use('/api/notifications', notificationRoutes);
+  app.use('/api/contact', contactRoutes);
 
   // 404 handler for undefined routes
   app.use('*', (req, res) => {

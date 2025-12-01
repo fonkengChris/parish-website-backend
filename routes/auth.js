@@ -10,6 +10,7 @@ import { loginRateLimiter } from '../middleware/rateLimiter.js';
 import { validatePassword } from '../utils/passwordValidation.js';
 import { validate, schemas } from '../middleware/validation.js';
 import { authLogger, errorLogger } from '../utils/logger.js';
+import notificationService from '../services/notificationService.js';
 
 const router = express.Router();
 
@@ -98,8 +99,8 @@ router.post('/login', loginRateLimiter, validate(schemas.login), async (req, res
       accessToken,
       user: {
         id: user._id,
-        username: user.username,
-        email: user.email,
+        username: user.username || null,
+        email: user.email || null,
         role: user.role
       }
     });
@@ -177,6 +178,51 @@ router.post('/register', validate(schemas.register), async (req, res) => {
       firstName: parishioner.firstName,
       lastName: parishioner.lastName
     });
+
+    // Send welcome message to new user
+    try {
+      const parishName = process.env.PARISH_NAME || 'Parish Website';
+      const fullName = `${firstName} ${lastName}`;
+      
+      await notificationService.sendNotification({
+        type: 'email',
+        recipient: {
+          email: user.email,
+          name: fullName,
+          phone: phone || undefined
+        },
+        subject: `Welcome to ${parishName}!`,
+        message: `Dear ${firstName},\n\nWelcome to our parish community! We are delighted to have you join us.\n\nYour registration has been successfully completed. You can now:\n- Access your profile and update your information\n- View mass schedules and events\n- Participate in ministries\n- Stay connected with our parish community\n\nIf you have any questions or need assistance, please don't hesitate to contact us.\n\nMay God bless you,\n${parishName} Team`,
+        htmlMessage: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #1a365d;">Welcome to ${parishName}!</h2>
+            <p>Dear ${firstName},</p>
+            <p>Welcome to our parish community! We are delighted to have you join us.</p>
+            <p>Your registration has been successfully completed. You can now:</p>
+            <ul style="line-height: 1.8;">
+              <li>Access your profile and update your information</li>
+              <li>View mass schedules and events</li>
+              <li>Participate in ministries</li>
+              <li>Stay connected with our parish community</li>
+            </ul>
+            <p>If you have any questions or need assistance, please don't hesitate to contact us.</p>
+            <p style="margin-top: 30px;">May God bless you,<br><strong>${parishName} Team</strong></p>
+          </div>
+        `,
+        metadata: {
+          source: 'registration',
+          userId: user._id.toString(),
+          parishionerId: parishioner._id.toString()
+        }
+      });
+    } catch (welcomeError) {
+      // Log error but don't fail registration
+      errorLogger.error({ 
+        err: welcomeError, 
+        userId: user._id, 
+        email: user.email 
+      }, 'Failed to send welcome email to new user');
+    }
     
     res.status(201).json({ 
       message: 'Registration successful! Welcome to our parish community.',
