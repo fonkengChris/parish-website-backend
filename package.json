@@ -11,12 +11,14 @@
     "create-admin": "node scripts/createAdmin.js",
     "seed-schedules": "node scripts/seedMassSchedules.js",
     "seed-schedules:clear": "node scripts/seedMassSchedules.js --clear",
-    "check-parishioners": "node scripts/checkParishioners.js"
+    "check-parishioners": "node scripts/checkParishioners.js",
+    "verify-payments": "node scripts/verifyPaymentConfig.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
