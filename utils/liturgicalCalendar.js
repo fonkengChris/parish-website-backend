@@ -114,7 +114,7 @@ export const LITURGICAL_COLORS = {
  * @param {number} year - The year
  * @returns {Date} - Easter Sunday date
  */
-function calculateEaster(year) {
+export function calculateEaster(year) {
   const a = year % 19;
   const b = Math.floor(year / 100);
   const c = year % 100;
@@ -139,7 +139,7 @@ function calculateEaster(year) {
  * @param {number} sundayNumber - 1-4 for the Sunday of Advent
  * @returns {Date} - Date of the specified Sunday
  */
-function getAdventSunday(year, sundayNumber) {
+export function getAdventSunday(year, sundayNumber) {
   const christmas = new Date(year, 11, 25); // December 25
   const dayOfWeek = christmas.getDay();
   
@@ -163,7 +163,7 @@ function getAdventSunday(year, sundayNumber) {
  * @param {Date} date - The date to check
  * @returns {boolean}
  */
-function isAdvent(date) {
+export function isAdvent(date) {
   const year = date.getFullYear();
   const firstSunday = getAdventSunday(year, 1);
   const christmas = new Date(year, 11, 25);
@@ -176,7 +176,7 @@ function isAdvent(date) {
  * @param {Date} date - The date to check
  * @returns {boolean}
  */
-function isChristmasSeason(date) {
+export function isChristmasSeason(date) {
   const year = date.getFullYear();
   const month = date.getMonth();
   
@@ -214,7 +214,7 @@ function isChristmasSeason(date) {
  * @param {Date} easter - Easter date for the year
  * @returns {boolean}
  */
-function isLent(date, easter) {
+export function isLent(date, easter) {
   const ashWednesday = new Date(easter);
   ashWednesday.setDate(easter.getDate() - 46); // 46 days before Easter (40 days + 6 Sundays)
   
@@ -230,7 +230,7 @@ function isLent(date, easter) {
  * @param {Date} easter - Easter date for the year
  * @returns {boolean}
  */
-function isPalmSunday(date, easter) {
+export function isPalmSunday(date, easter) {
   const palmSunday = new Date(easter);
   palmSunday.setDate(easter.getDate() - 7);
   
@@ -243,7 +243,7 @@ function isPalmSunday(date, easter) {
  * @param {Date} easter - Easter date for the year
  * @returns {boolean}
  */
-function isGoodFriday(date, easter) {
+export function isGoodFriday(date, easter) {
   const goodFriday = new Date(easter);
   goodFriday.setDate(easter.getDate() - 2);
   
@@ -256,7 +256,7 @@ function isGoodFriday(date, easter) {
  * @param {Date} easter - Easter date for the year
  * @returns {boolean}
  */
-function isEasterSeason(date, easter) {
+export function isEasterSeason(date, easter) {
   const pentecost = new Date(easter);
   pentecost.setDate(easter.getDate() + 49); // 50 days after Easter (Pentecost Sunday)
   
@@ -269,7 +269,7 @@ function isEasterSeason(date, easter) {
  * @param {Date} easter - Easter date for the year
  * @returns {boolean}
  */
-function isPentecost(date, easter) {
+export function isPentecost(date, easter) {
   const pentecost = new Date(easter);
   pentecost.setDate(easter.getDate() + 49);
   
@@ -281,7 +281,7 @@ function isPentecost(date, easter) {
  * @param {Date} date - The date to check
  * @returns {boolean}
  */
-function isGaudeteSunday(date) {
+export function isGaudeteSunday(date) {
   if (!isAdvent(date)) return false;
   
   const year = date.getFullYear();
@@ -296,7 +296,7 @@ function isGaudeteSunday(date) {
  * @param {Date} easter - Easter date for the year
  * @returns {boolean}
  */
-function isLaetareSunday(date, easter) {
+export function isLaetareSunday(date, easter) {
   if (!isLent(date, easter)) return false;
   
   const ashWednesday = new Date(easter);
