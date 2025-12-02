@@ -285,28 +285,163 @@ router.post(
 
         // Send receipt email
         try {
+          const donationDate = new Date(donation.createdAt || Date.now());
+          const formattedDate = donationDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+          const formattedTime = donationDate.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+
+          const purposeLabels = {
+            'general': 'General Donation',
+            'building': 'Building Fund',
+            'charity': 'Charity',
+            'education': 'Education',
+            'maintenance': 'Maintenance',
+            'events': 'Events',
+            'sacraments': 'Sacraments',
+            'other': donation.purposeDescription || 'Other'
+          };
+
+          const purposeLabel = purposeLabels[donation.purpose] || donation.purpose;
+
+          const plainText = `Dear ${donation.donor.name},
+
+Thank you for your generous donation to ${process.env.PARISH_NAME || 'our Parish'}!
+
+DONATION RECEIPT
+================
+
+Receipt Number: ${donation._id}
+Date: ${formattedDate} at ${formattedTime}
+Amount: ${donation.amount} ${donation.currency}
+Payment Method: PayPal
+Transaction ID: ${captureResult.transactionId}
+Purpose: ${purposeLabel}${donation.purposeDescription ? ` - ${donation.purposeDescription}` : ''}${donation.notes ? `\nNotes: ${donation.notes}` : ''}
+
+Your donation will help us continue our mission and serve our community. We are truly grateful for your support.
+
+May God bless you abundantly!
+
+With gratitude,
+${process.env.PARISH_NAME || 'Parish'} Team
+${process.env.PARISH_CONTACT_EMAIL ? `\nContact: ${process.env.PARISH_CONTACT_EMAIL}` : ''}
+
+---
+This is an automated receipt. Please keep this email for your records.`;
+
+          const htmlMessage = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f4f4;">
+    <tr>
+      <td style="padding: 20px 0;">
+        <table role="presentation" style="width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%); padding: 30px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px;">Thank You!</h1>
+              <p style="color: #e2e8f0; margin: 10px 0 0 0; font-size: 16px;">Your donation receipt</p>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 30px;">
+              <p style="color: #2d3748; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                Dear <strong>${donation.donor.name}</strong>,
+              </p>
+              <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+                Thank you for your generous donation to <strong>${process.env.PARISH_NAME || 'our Parish'}</strong>! Your support helps us continue our mission and serve our community.
+              </p>
+              
+              <!-- Receipt Box -->
+              <div style="background-color: #f7fafc; border-left: 4px solid #2d3748; padding: 20px; margin: 25px 0; border-radius: 4px;">
+                <h2 style="color: #1a365d; margin: 0 0 20px 0; font-size: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">DONATION RECEIPT</h2>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px; width: 40%;"><strong>Receipt Number:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px; font-family: monospace;">${donation._id}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Date:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">${formattedDate} at ${formattedTime}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Amount:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 16px; font-weight: bold;">${donation.amount} ${donation.currency}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Payment Method:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">PayPal</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Transaction ID:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px; font-family: monospace; word-break: break-all;">${captureResult.transactionId}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Purpose:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">${purposeLabel}${donation.purposeDescription ? ` - ${donation.purposeDescription}` : ''}</td>
+                  </tr>
+                  ${donation.notes ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Notes:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">${donation.notes}</td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+              
+              <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin: 25px 0;">
+                We are truly grateful for your support. May God bless you abundantly!
+              </p>
+              
+              <p style="color: #2d3748; font-size: 15px; margin: 30px 0 10px 0;">
+                With gratitude,<br>
+                <strong>${process.env.PARISH_NAME || 'Parish'} Team</strong>
+              </p>
+              ${process.env.PARISH_CONTACT_EMAIL ? `
+              <p style="color: #718096; font-size: 13px; margin: 10px 0 0 0;">
+                Contact: <a href="mailto:${process.env.PARISH_CONTACT_EMAIL}" style="color: #2d3748; text-decoration: none;">${process.env.PARISH_CONTACT_EMAIL}</a>
+              </p>
+              ` : ''}
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f7fafc; padding: 20px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <p style="color: #718096; font-size: 12px; margin: 0; line-height: 1.5;">
+                This is an automated receipt. Please keep this email for your records.<br>
+                If you have any questions, please contact us at ${process.env.PARISH_CONTACT_EMAIL || 'the parish office'}.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
           await notificationService.sendNotification({
             type: 'email',
             recipient: {
               email: donation.donor.email,
               name: donation.donor.name
             },
-            subject: `Thank you for your donation - Receipt #${donation._id}`,
-            message: `Dear ${donation.donor.name},\n\nThank you for your generous donation of ${donation.amount} ${donation.currency}.\n\nPurpose: ${donation.purpose}\nTransaction ID: ${captureResult.transactionId}\n\nGod bless you!\n\n${process.env.PARISH_NAME || 'Parish'}`,
-            htmlMessage: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1a365d;">Thank you for your donation!</h2>
-                <p>Dear ${donation.donor.name},</p>
-                <p>Thank you for your generous donation of <strong>${donation.amount} ${donation.currency}</strong>.</p>
-                <div style="background-color: #f7fafc; padding: 15px; border-left: 4px solid #2d3748; margin: 20px 0;">
-                  <p><strong>Purpose:</strong> ${donation.purpose}</p>
-                  <p><strong>Transaction ID:</strong> ${captureResult.transactionId}</p>
-                  <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                </div>
-                <p>God bless you!</p>
-                <p>${process.env.PARISH_NAME || 'Parish'} Team</p>
-              </div>
-            `,
+            subject: `Thank you for your donation - Receipt #${donation._id.toString().substring(0, 8)}`,
+            message: plainText,
+            htmlMessage: htmlMessage,
             metadata: {
               source: 'donation_receipt',
               donationId: donation._id.toString()
@@ -474,28 +609,163 @@ router.post(
 
         // Send receipt email
         try {
+          const donationDate = new Date(donation.createdAt || Date.now());
+          const formattedDate = donationDate.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          });
+          const formattedTime = donationDate.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          });
+
+          const purposeLabels = {
+            'general': 'General Donation',
+            'building': 'Building Fund',
+            'charity': 'Charity',
+            'education': 'Education',
+            'maintenance': 'Maintenance',
+            'events': 'Events',
+            'sacraments': 'Sacraments',
+            'other': donation.purposeDescription || 'Other'
+          };
+
+          const purposeLabel = purposeLabels[donation.purpose] || donation.purpose;
+
+          const plainText = `Dear ${donation.donor.name},
+
+Thank you for your generous donation to ${process.env.PARISH_NAME || 'our Parish'}!
+
+DONATION RECEIPT
+================
+
+Receipt Number: ${donation._id}
+Date: ${formattedDate} at ${formattedTime}
+Amount: ${donation.amount} ${donation.currency}
+Payment Method: MTN Mobile Money
+Transaction Reference: ${statusResult.financialTransactionId}
+Purpose: ${purposeLabel}${donation.purposeDescription ? ` - ${donation.purposeDescription}` : ''}${donation.notes ? `\nNotes: ${donation.notes}` : ''}
+
+Your donation will help us continue our mission and serve our community. We are truly grateful for your support.
+
+May God bless you abundantly!
+
+With gratitude,
+${process.env.PARISH_NAME || 'Parish'} Team
+${process.env.PARISH_CONTACT_EMAIL ? `\nContact: ${process.env.PARISH_CONTACT_EMAIL}` : ''}
+
+---
+This is an automated receipt. Please keep this email for your records.`;
+
+          const htmlMessage = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f4f4;">
+    <tr>
+      <td style="padding: 20px 0;">
+        <table role="presentation" style="width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%); padding: 30px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px;">Thank You!</h1>
+              <p style="color: #e2e8f0; margin: 10px 0 0 0; font-size: 16px;">Your donation receipt</p>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 30px;">
+              <p style="color: #2d3748; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                Dear <strong>${donation.donor.name}</strong>,
+              </p>
+              <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+                Thank you for your generous donation to <strong>${process.env.PARISH_NAME || 'our Parish'}</strong>! Your support helps us continue our mission and serve our community.
+              </p>
+              
+              <!-- Receipt Box -->
+              <div style="background-color: #f7fafc; border-left: 4px solid #2d3748; padding: 20px; margin: 25px 0; border-radius: 4px;">
+                <h2 style="color: #1a365d; margin: 0 0 20px 0; font-size: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">DONATION RECEIPT</h2>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px; width: 40%;"><strong>Receipt Number:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px; font-family: monospace;">${donation._id}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Date:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">${formattedDate} at ${formattedTime}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Amount:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 16px; font-weight: bold;">${donation.amount} ${donation.currency}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Payment Method:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">MTN Mobile Money</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Transaction Reference:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px; font-family: monospace; word-break: break-all;">${statusResult.financialTransactionId}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Purpose:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">${purposeLabel}${donation.purposeDescription ? ` - ${donation.purposeDescription}` : ''}</td>
+                  </tr>
+                  ${donation.notes ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Notes:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">${donation.notes}</td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+              
+              <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin: 25px 0;">
+                We are truly grateful for your support. May God bless you abundantly!
+              </p>
+              
+              <p style="color: #2d3748; font-size: 15px; margin: 30px 0 10px 0;">
+                With gratitude,<br>
+                <strong>${process.env.PARISH_NAME || 'Parish'} Team</strong>
+              </p>
+              ${process.env.PARISH_CONTACT_EMAIL ? `
+              <p style="color: #718096; font-size: 13px; margin: 10px 0 0 0;">
+                Contact: <a href="mailto:${process.env.PARISH_CONTACT_EMAIL}" style="color: #2d3748; text-decoration: none;">${process.env.PARISH_CONTACT_EMAIL}</a>
+              </p>
+              ` : ''}
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f7fafc; padding: 20px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <p style="color: #718096; font-size: 12px; margin: 0; line-height: 1.5;">
+                This is an automated receipt. Please keep this email for your records.<br>
+                If you have any questions, please contact us at ${process.env.PARISH_CONTACT_EMAIL || 'the parish office'}.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
           await notificationService.sendNotification({
             type: 'email',
             recipient: {
               email: donation.donor.email,
               name: donation.donor.name
             },
-            subject: `Thank you for your donation - Receipt #${donation._id}`,
-            message: `Dear ${donation.donor.name},\n\nThank you for your generous donation of ${donation.amount} ${donation.currency}.\n\nPurpose: ${donation.purpose}\nTransaction Reference: ${statusResult.financialTransactionId}\n\nGod bless you!\n\n${process.env.PARISH_NAME || 'Parish'}`,
-            htmlMessage: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2 style="color: #1a365d;">Thank you for your donation!</h2>
-                <p>Dear ${donation.donor.name},</p>
-                <p>Thank you for your generous donation of <strong>${donation.amount} ${donation.currency}</strong>.</p>
-                <div style="background-color: #f7fafc; padding: 15px; border-left: 4px solid #2d3748; margin: 20px 0;">
-                  <p><strong>Purpose:</strong> ${donation.purpose}</p>
-                  <p><strong>Transaction Reference:</strong> ${statusResult.financialTransactionId}</p>
-                  <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-                </div>
-                <p>God bless you!</p>
-                <p>${process.env.PARISH_NAME || 'Parish'} Team</p>
-              </div>
-            `,
+            subject: `Thank you for your donation - Receipt #${donation._id.toString().substring(0, 8)}`,
+            message: plainText,
+            htmlMessage: htmlMessage,
             metadata: {
               source: 'donation_receipt',
               donationId: donation._id.toString()
@@ -549,28 +819,163 @@ router.post('/mtn/callback', async (req, res) => {
 
       // Send receipt email
       try {
+        const donationDate = new Date(donation.createdAt || Date.now());
+        const formattedDate = donationDate.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+        const formattedTime = donationDate.toLocaleTimeString('en-US', { 
+          hour: '2-digit', 
+          minute: '2-digit' 
+        });
+
+        const purposeLabels = {
+          'general': 'General Donation',
+          'building': 'Building Fund',
+          'charity': 'Charity',
+          'education': 'Education',
+          'maintenance': 'Maintenance',
+          'events': 'Events',
+          'sacraments': 'Sacraments',
+          'other': donation.purposeDescription || 'Other'
+        };
+
+        const purposeLabel = purposeLabels[donation.purpose] || donation.purpose;
+
+        const plainText = `Dear ${donation.donor.name},
+
+Thank you for your generous donation to ${process.env.PARISH_NAME || 'our Parish'}!
+
+DONATION RECEIPT
+================
+
+Receipt Number: ${donation._id}
+Date: ${formattedDate} at ${formattedTime}
+Amount: ${donation.amount} ${donation.currency}
+Payment Method: MTN Mobile Money
+Transaction Reference: ${financialTransactionId}
+Purpose: ${purposeLabel}${donation.purposeDescription ? ` - ${donation.purposeDescription}` : ''}${donation.notes ? `\nNotes: ${donation.notes}` : ''}
+
+Your donation will help us continue our mission and serve our community. We are truly grateful for your support.
+
+May God bless you abundantly!
+
+With gratitude,
+${process.env.PARISH_NAME || 'Parish'} Team
+${process.env.PARISH_CONTACT_EMAIL ? `\nContact: ${process.env.PARISH_CONTACT_EMAIL}` : ''}
+
+---
+This is an automated receipt. Please keep this email for your records.`;
+
+        const htmlMessage = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+  <table role="presentation" style="width: 100%; border-collapse: collapse; background-color: #f4f4f4;">
+    <tr>
+      <td style="padding: 20px 0;">
+        <table role="presentation" style="width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%); padding: 30px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; font-size: 28px;">Thank You!</h1>
+              <p style="color: #e2e8f0; margin: 10px 0 0 0; font-size: 16px;">Your donation receipt</p>
+            </td>
+          </tr>
+          
+          <!-- Content -->
+          <tr>
+            <td style="padding: 30px;">
+              <p style="color: #2d3748; font-size: 16px; line-height: 1.6; margin: 0 0 20px 0;">
+                Dear <strong>${donation.donor.name}</strong>,
+              </p>
+              <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin: 0 0 25px 0;">
+                Thank you for your generous donation to <strong>${process.env.PARISH_NAME || 'our Parish'}</strong>! Your support helps us continue our mission and serve our community.
+              </p>
+              
+              <!-- Receipt Box -->
+              <div style="background-color: #f7fafc; border-left: 4px solid #2d3748; padding: 20px; margin: 25px 0; border-radius: 4px;">
+                <h2 style="color: #1a365d; margin: 0 0 20px 0; font-size: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;">DONATION RECEIPT</h2>
+                <table role="presentation" style="width: 100%; border-collapse: collapse;">
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px; width: 40%;"><strong>Receipt Number:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px; font-family: monospace;">${donation._id}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Date:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">${formattedDate} at ${formattedTime}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Amount:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 16px; font-weight: bold;">${donation.amount} ${donation.currency}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Payment Method:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">MTN Mobile Money</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Transaction Reference:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px; font-family: monospace; word-break: break-all;">${financialTransactionId}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Purpose:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">${purposeLabel}${donation.purposeDescription ? ` - ${donation.purposeDescription}` : ''}</td>
+                  </tr>
+                  ${donation.notes ? `
+                  <tr>
+                    <td style="padding: 8px 0; color: #4a5568; font-size: 14px;"><strong>Notes:</strong></td>
+                    <td style="padding: 8px 0; color: #2d3748; font-size: 14px;">${donation.notes}</td>
+                  </tr>
+                  ` : ''}
+                </table>
+              </div>
+              
+              <p style="color: #4a5568; font-size: 15px; line-height: 1.6; margin: 25px 0;">
+                We are truly grateful for your support. May God bless you abundantly!
+              </p>
+              
+              <p style="color: #2d3748; font-size: 15px; margin: 30px 0 10px 0;">
+                With gratitude,<br>
+                <strong>${process.env.PARISH_NAME || 'Parish'} Team</strong>
+              </p>
+              ${process.env.PARISH_CONTACT_EMAIL ? `
+              <p style="color: #718096; font-size: 13px; margin: 10px 0 0 0;">
+                Contact: <a href="mailto:${process.env.PARISH_CONTACT_EMAIL}" style="color: #2d3748; text-decoration: none;">${process.env.PARISH_CONTACT_EMAIL}</a>
+              </p>
+              ` : ''}
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background-color: #f7fafc; padding: 20px 30px; text-align: center; border-top: 1px solid #e2e8f0;">
+              <p style="color: #718096; font-size: 12px; margin: 0; line-height: 1.5;">
+                This is an automated receipt. Please keep this email for your records.<br>
+                If you have any questions, please contact us at ${process.env.PARISH_CONTACT_EMAIL || 'the parish office'}.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
         await notificationService.sendNotification({
           type: 'email',
           recipient: {
             email: donation.donor.email,
             name: donation.donor.name
           },
-          subject: `Thank you for your donation - Receipt #${donation._id}`,
-          message: `Dear ${donation.donor.name},\n\nThank you for your generous donation of ${donation.amount} ${donation.currency}.\n\nPurpose: ${donation.purpose}\nTransaction Reference: ${financialTransactionId}\n\nGod bless you!\n\n${process.env.PARISH_NAME || 'Parish'}`,
-          htmlMessage: `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #1a365d;">Thank you for your donation!</h2>
-              <p>Dear ${donation.donor.name},</p>
-              <p>Thank you for your generous donation of <strong>${donation.amount} ${donation.currency}</strong>.</p>
-              <div style="background-color: #f7fafc; padding: 15px; border-left: 4px solid #2d3748; margin: 20px 0;">
-                <p><strong>Purpose:</strong> ${donation.purpose}</p>
-                <p><strong>Transaction Reference:</strong> ${financialTransactionId}</p>
-                <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-              </div>
-              <p>God bless you!</p>
-              <p>${process.env.PARISH_NAME || 'Parish'} Team</p>
-            </div>
-          `,
+          subject: `Thank you for your donation - Receipt #${donation._id.toString().substring(0, 8)}`,
+          message: plainText,
+          htmlMessage: htmlMessage,
           metadata: {
             source: 'donation_receipt',
             donationId: donation._id.toString()
