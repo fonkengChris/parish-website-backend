@@ -354,6 +354,8 @@ export async function getLiturgicalColor(date = new Date(), override = null) {
   const year = date.getFullYear();
   const easter = calculateEaster(year);
   const easterNextYear = calculateEaster(year + 1);
+  const month = date.getMonth();
+  const day = date.getDate();
   
   // Check for special days first
   if (isPalmSunday(date, easter) || isGoodFriday(date, easter) || isPentecost(date, easter)) {
@@ -366,6 +368,28 @@ export async function getLiturgicalColor(date = new Date(), override = null) {
   
   if (isLaetareSunday(date, easter)) {
     return LITURGICAL_COLORS.ROSE;
+  }
+  
+  // Check for major feasts that override season colors
+  // These solemnities and feasts take precedence over the season
+  // Immaculate Conception (December 8) - Solemnity, white even during Advent
+  if (month === 11 && day === 8) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Our Lady of Guadalupe (December 12) - Feast, white even during Advent
+  if (month === 11 && day === 12) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Joseph (March 19) - Solemnity, white even during Lent
+  if (month === 2 && day === 19) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Annunciation (March 25) - Solemnity, white even during Lent
+  if (month === 2 && day === 25) {
+    return LITURGICAL_COLORS.WHITE;
   }
   
   // Check seasons
