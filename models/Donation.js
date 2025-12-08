@@ -32,12 +32,8 @@ const donationSchema = new mongoose.Schema({
     required: true,
     enum: [
       'general',
-      'building',
       'charity',
-      'education',
-      'maintenance',
-      'events',
-      'sacraments',
+      'mass',
       'other'
     ]
   },

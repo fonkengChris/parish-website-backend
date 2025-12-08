@@ -150,7 +150,7 @@ router.post(
   [
     body('amount').isFloat({ min: 0.01 }).withMessage('Amount must be greater than 0'),
     body('currency').optional().isIn(['USD', 'EUR', 'XAF']).withMessage('Invalid currency'),
-    body('purpose').isIn(['general', 'building', 'charity', 'education', 'maintenance', 'events', 'sacraments', 'other']).withMessage('Invalid purpose'),
+    body('purpose').isIn(['general', 'charity', 'mass', 'other']).withMessage('Invalid purpose'),
     body('donor.name').trim().notEmpty().withMessage('Donor name is required'),
     body('donor.email').isEmail().withMessage('Valid email is required'),
     body('donor.phone').optional().trim(),
@@ -298,12 +298,8 @@ router.post(
 
           const purposeLabels = {
             'general': 'General Donation',
-            'building': 'Building Fund',
             'charity': 'Charity',
-            'education': 'Education',
-            'maintenance': 'Maintenance',
-            'events': 'Events',
-            'sacraments': 'Sacraments',
+            'mass': 'Mass Intention',
             'other': donation.purposeDescription || 'Other'
           };
 
@@ -476,7 +472,7 @@ router.post(
   [
     body('amount').isFloat({ min: 100 }).withMessage('Amount must be at least 100 XAF'),
     body('phoneNumber').trim().notEmpty().withMessage('Phone number is required'),
-    body('purpose').isIn(['general', 'building', 'charity', 'education', 'maintenance', 'events', 'sacraments', 'other']).withMessage('Invalid purpose'),
+    body('purpose').isIn(['general', 'charity', 'mass', 'other']).withMessage('Invalid purpose'),
     body('donor.name').trim().notEmpty().withMessage('Donor name is required'),
     body('donor.email').isEmail().withMessage('Valid email is required'),
     body('purposeDescription').optional().trim(),
@@ -622,12 +618,8 @@ router.post(
 
           const purposeLabels = {
             'general': 'General Donation',
-            'building': 'Building Fund',
             'charity': 'Charity',
-            'education': 'Education',
-            'maintenance': 'Maintenance',
-            'events': 'Events',
-            'sacraments': 'Sacraments',
+            'mass': 'Mass Intention',
             'other': donation.purposeDescription || 'Other'
           };
 
@@ -832,12 +824,8 @@ router.post('/mtn/callback', async (req, res) => {
 
         const purposeLabels = {
           'general': 'General Donation',
-          'building': 'Building Fund',
           'charity': 'Charity',
-          'education': 'Education',
-          'maintenance': 'Maintenance',
-          'events': 'Events',
-          'sacraments': 'Sacraments',
+          'mass': 'Mass Intention',
           'other': donation.purposeDescription || 'Other'
         };
 
