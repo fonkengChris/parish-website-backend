@@ -53,7 +53,23 @@ export const schemas = {
   // Gallery schemas
   galleryItem: Joi.object({
     title: Joi.string().required().trim(),
-    imageUrl: Joi.string().uri().required(),
+    imageUrl: Joi.string().required().custom((value, helpers) => {
+      // Allow full URIs (http://, https://) or relative paths starting with /
+      const isRelativePath = value.startsWith('/');
+      const isFullUri = value.startsWith('http://') || value.startsWith('https://');
+      
+      if (isRelativePath || isFullUri) {
+        return value;
+      }
+      
+      // Try to validate as URI for other cases
+      try {
+        new URL(value);
+        return value;
+      } catch {
+        return helpers.error('string.uri');
+      }
+    }, 'URL or relative path validation'),
     eventId: Joi.string().hex().length(24).optional().allow('', null),
     category: Joi.string().optional(),
     isActive: Joi.boolean().optional()
