@@ -6,6 +6,11 @@ import { LITURGICAL_COLORS } from '../utils/liturgicalCalendar.js';
 
 const router = express.Router();
 
+// Handle OPTIONS requests for CORS preflight (before authentication)
+router.options('*', (req, res) => {
+  res.sendStatus(200);
+});
+
 // All routes require authentication and admin access
 router.use(authenticate);
 router.use(requireAdmin);

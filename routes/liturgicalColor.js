@@ -1,9 +1,11 @@
 import express from 'express';
-import { getTodayLiturgicalColor, getLiturgicalColor, setOverrideModel } from '../utils/liturgicalCalendar.js';
+import { getTodayLiturgicalColor, getLiturgicalColor, setOverrideModel, setSaintCalendarFunction } from '../utils/liturgicalCalendar.js';
 import LiturgicalColorOverride from '../models/LiturgicalColorOverride.js';
+import { getSaintsForDate } from '../utils/saintCalendar.js';
 
-// Set the override model in the liturgical calendar utility
+// Set the override model and saint calendar function in the liturgical calendar utility
 setOverrideModel(LiturgicalColorOverride);
+setSaintCalendarFunction(getSaintsForDate);
 
 const router = express.Router();
 

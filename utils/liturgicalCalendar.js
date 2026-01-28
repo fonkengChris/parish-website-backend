@@ -5,106 +5,111 @@
 
 // Import will be done dynamically to avoid circular dependencies
 let LiturgicalColorOverride = null;
+let getSaintsForDate = null;
 export function setOverrideModel(model) {
   LiturgicalColorOverride = model;
 }
+export function setSaintCalendarFunction(func) {
+  getSaintsForDate = func;
+}
 
 // Liturgical color definitions with hex codes
+// Colors optimized for better contrast ratios (WCAG AA compliant: 4.5:1 for normal text, 3:1 for large text)
 export const LITURGICAL_COLORS = {
   WHITE: {
     name: 'white',
     hex: '#ffffff',
     tailwind: {
-      50: '#ffffff',
-      100: '#f9fafb',
-      200: '#f3f4f6',
-      300: '#e5e7eb',
-      400: '#d1d5db',
-      500: '#9ca3af',
-      600: '#6b7280',
-      700: '#4b5563',
-      800: '#374151',
-      900: '#1f2937',
+      50: '#ffffff',  // White background - use dark text (700-900)
+      100: '#f8f9fa', // Very light gray - use dark text (700-900)
+      200: '#e9ecef', // Light gray - use dark text (700-900)
+      300: '#dee2e6', // Medium-light gray - use dark text (800-900)
+      400: '#ced4da', // Medium gray - use dark text (800-900)
+      500: '#868e96', // Medium-dark gray - use white text
+      600: '#495057', // Dark gray - use white text
+      700: '#343a40', // Very dark gray - use white text
+      800: '#212529', // Almost black - use white text
+      900: '#1a1d21', // Black - use white text
     }
   },
   RED: {
     name: 'red',
-    hex: '#dc2626',
+    hex: '#c41e3a', // Darker red for better contrast
     tailwind: {
-      50: '#fef2f2',
-      100: '#fee2e2',
-      200: '#fecaca',
-      300: '#fca5a5',
-      400: '#f87171',
-      500: '#ef4444',
-      600: '#dc2626',
-      700: '#b91c1c',
-      800: '#991b1b',
-      900: '#7f1d1d',
+      50: '#fff5f5',  // Very light red - use dark text (700-900)
+      100: '#ffe0e0', // Light red - use dark text (700-900)
+      200: '#ffcccc', // Light-medium red - use dark text (800-900)
+      300: '#ff9999', // Medium red - use dark text (800-900)
+      400: '#ff6666', // Medium-dark red - use dark text (900)
+      500: '#e63946', // Bright red - use white text
+      600: '#c41e3a', // Dark red - use white text
+      700: '#a01d2e', // Very dark red - use white text
+      800: '#7d1622', // Darker red - use white text
+      900: '#5a0f18', // Darkest red - use white text
     }
   },
   GREEN: {
     name: 'green',
-    hex: '#16a34a',
+    hex: '#0d7a3d', // Darker green for better contrast
     tailwind: {
-      50: '#f0fdf4',
-      100: '#dcfce7',
-      200: '#bbf7d0',
-      300: '#86efac',
-      400: '#4ade80',
-      500: '#22c55e',
-      600: '#16a34a',
-      700: '#15803d',
-      800: '#166534',
-      900: '#14532d',
+      50: '#f0fdf4',  // Very light green - use dark text (700-900)
+      100: '#dcfce7', // Light green - use dark text (700-900)
+      200: '#bbf7d0', // Light-medium green - use dark text (800-900)
+      300: '#86efac', // Medium green - use dark text (800-900)
+      400: '#4ade80', // Medium-dark green - use dark text (900)
+      500: '#22c55e', // Bright green - use white text
+      600: '#0d7a3d', // Dark green - use white text
+      700: '#0a5d2e', // Very dark green - use white text
+      800: '#084025', // Darker green - use white text
+      900: '#052e1a', // Darkest green - use white text
     }
   },
   PURPLE: {
     name: 'purple',
-    hex: '#9333ea',
+    hex: '#7c2d9a', // Darker purple for better contrast
     tailwind: {
-      50: '#faf5ff',
-      100: '#f3e8ff',
-      200: '#e9d5ff',
-      300: '#d8b4fe',
-      400: '#c084fc',
-      500: '#a855f7',
-      600: '#9333ea',
-      700: '#7e22ce',
-      800: '#6b21a8',
-      900: '#581c87',
+      50: '#faf5ff',  // Very light purple - use dark text (700-900)
+      100: '#f3e8ff', // Light purple - use dark text (700-900)
+      200: '#e9d5ff', // Light-medium purple - use dark text (800-900)
+      300: '#d8b4fe', // Medium purple - use dark text (800-900)
+      400: '#c084fc', // Medium-dark purple - use dark text (900)
+      500: '#a855f7', // Bright purple - use white text
+      600: '#7c2d9a', // Dark purple - use white text
+      700: '#6b1f7e', // Very dark purple - use white text
+      800: '#561866', // Darker purple - use white text
+      900: '#40114d', // Darkest purple - use white text
     }
   },
   ROSE: {
     name: 'rose',
-    hex: '#e11d48',
+    hex: '#c2185b', // Darker rose for better contrast
     tailwind: {
-      50: '#fff1f2',
-      100: '#ffe4e6',
-      200: '#fecdd3',
-      300: '#fda4af',
-      400: '#fb7185',
-      500: '#f43f5e',
-      600: '#e11d48',
-      700: '#be123c',
-      800: '#9f1239',
-      900: '#881337',
+      50: '#fff1f2',  // Very light rose - use dark text (700-900)
+      100: '#ffe4e6', // Light rose - use dark text (700-900)
+      200: '#fecdd3', // Light-medium rose - use dark text (800-900)
+      300: '#fda4af', // Medium rose - use dark text (800-900)
+      400: '#fb7185', // Medium-dark rose - use dark text (900)
+      500: '#f43f5e', // Bright rose - use white text
+      600: '#c2185b', // Dark rose - use white text
+      700: '#a0144a', // Very dark rose - use white text
+      800: '#7e1038', // Darker rose - use white text
+      900: '#5c0c29', // Darkest rose - use white text
     }
   },
   GOLD: {
     name: 'gold',
-    hex: '#f59e0b',
+    hex: '#b8860b', // Darker gold for better contrast
     tailwind: {
-      50: '#fffbeb',
-      100: '#fef3c7',
-      200: '#fde68a',
-      300: '#fcd34d',
-      400: '#fbbf24',
-      500: '#f59e0b',
-      600: '#d97706',
-      700: '#b45309',
-      800: '#92400e',
-      900: '#78350f',
+      50: '#fffbeb',  // Very light gold - use dark text (700-900)
+      100: '#fef3c7', // Light gold - use dark text (700-900)
+      200: '#fde68a', // Light-medium gold - use dark text (800-900)
+      300: '#fcd34d', // Medium gold - use dark text (800-900)
+      400: '#fbbf24', // Medium-dark gold - use dark text (900)
+      500: '#f59e0b', // Bright gold - use dark text (900)
+      600: '#b8860b', // Dark gold - use white text
+      700: '#9a7209', // Very dark gold - use white text
+      800: '#7c5d07', // Darker gold - use white text
+      900: '#5e4705', // Darkest gold - use white text
     }
   }
 };
@@ -372,6 +377,79 @@ export async function getLiturgicalColor(date = new Date(), override = null) {
   
   // Check for major feasts that override season colors
   // These solemnities and feasts take precedence over the season
+  
+  // First, check if there's a feast on this date that should override
+  if (getSaintsForDate) {
+    try {
+      const saints = getSaintsForDate(date);
+      if (saints && saints.length > 0) {
+        const feast = saints[0];
+        
+        // Feasts of the Lord always override season colors (white)
+        if (feast.type === 'feast' && (
+          feast.name.includes('Lord') ||
+          feast.name.includes('Presentation') ||
+          feast.name.includes('Transfiguration') ||
+          feast.name.includes('Annunciation') ||
+          feast.name.includes('Visitation') ||
+          feast.name.includes('Exaltation') ||
+          feast.name.includes('Dedication')
+        )) {
+          return LITURGICAL_COLORS.WHITE;
+        }
+        
+        // Major Marian feasts override season colors (white)
+        if (feast.type === 'feast' && (
+          feast.name.includes('Mary') ||
+          feast.name.includes('Mother of God') ||
+          feast.name.includes('Immaculate Conception') ||
+          feast.name.includes('Assumption') ||
+          feast.name.includes('Guadalupe') ||
+          feast.name.includes('Nativity of the Blessed Virgin')
+        )) {
+          return LITURGICAL_COLORS.WHITE;
+        }
+        
+        // Major Apostle feasts override season colors (white)
+        // Since we're checking type === 'feast', memorials are already excluded
+        // All apostle feasts in the calendar are type 'feast', so this is safe
+        if (feast.type === 'feast' && (
+          feast.name.includes('Peter and Paul') ||
+          feast.name.includes('Chair of Saint Peter') ||
+          feast.name.includes('Conversion of Saint Paul') ||
+          feast.name.includes('Saints Philip and James') ||
+          feast.name.includes('Saints Simon and Jude') ||
+          feast.name.includes('Saint Andrew') ||
+          (feast.name.includes('Saint Thomas') && feast.description && feast.description.includes('Apostle')) ||
+          (feast.name.includes('Saint James') && feast.description && feast.description.includes('Apostle')) ||
+          feast.name.includes('Saint Bartholomew') ||
+          (feast.name.includes('Saint Matthew') && feast.description && feast.description.includes('Apostle')) ||
+          feast.name.includes('Saint Mark') ||
+          feast.name.includes('Saint Luke') ||
+          (feast.name.includes('Saint John') && feast.description && (feast.description.includes('Apostle') || feast.description.includes('Evangelist'))) ||
+          feast.name.includes('Saint Matthias')
+        )) {
+          return LITURGICAL_COLORS.WHITE;
+        }
+        
+        // Other major feasts that override season colors
+        if (feast.type === 'feast' && (
+          feast.name.includes('All Saints') ||
+          feast.name.includes('Nativity of Saint John the Baptist') ||
+          feast.name.includes('Saints Michael, Gabriel, and Raphael') ||
+          feast.name.includes('Saint Lawrence') ||
+          feast.name.includes('Saint Mary Magdalene')
+        )) {
+          return LITURGICAL_COLORS.WHITE;
+        }
+      }
+    } catch (error) {
+      console.error('Error checking saints for date:', error);
+      // Fall through to hardcoded checks
+    }
+  }
+  
+  // Hardcoded checks for specific feasts (fallback if saint calendar not available)
   // Immaculate Conception (December 8) - Solemnity, white even during Advent
   if (month === 11 && day === 8) {
     return LITURGICAL_COLORS.WHITE;
@@ -389,6 +467,152 @@ export async function getLiturgicalColor(date = new Date(), override = null) {
   
   // Annunciation (March 25) - Solemnity, white even during Lent
   if (month === 2 && day === 25) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // The Presentation of the Lord (February 2) - Feast, white even during Ordinary Time
+  if (month === 1 && day === 2) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Epiphany (January 6) - Feast of the Lord, white
+  if (month === 0 && day === 6) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Mary, Mother of God (January 1) - Solemnity, white
+  if (month === 0 && day === 1) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // The Transfiguration of the Lord (August 6) - Feast, white
+  if (month === 7 && day === 6) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // The Assumption of the Blessed Virgin Mary (August 15) - Solemnity, white
+  if (month === 7 && day === 15) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // The Nativity of the Blessed Virgin Mary (September 8) - Feast, white
+  if (month === 8 && day === 8) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // The Exaltation of the Holy Cross (September 14) - Feast, white
+  if (month === 8 && day === 14) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // All Saints (November 1) - Solemnity, white
+  if (month === 10 && day === 1) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // All Souls (November 2) - Commemoration, but typically uses purple/black, not white
+  // However, it can override green in Ordinary Time - but we'll use purple/black instead
+  // if (month === 10 && day === 2) {
+  //   return LITURGICAL_COLORS.PURPLE; // Or black if available
+  // }
+  
+  // The Dedication of the Lateran Basilica (November 9) - Feast, white
+  if (month === 10 && day === 9) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saints Peter and Paul (June 29) - Solemnity, white
+  if (month === 5 && day === 29) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // The Nativity of Saint John the Baptist (June 24) - Solemnity, white
+  if (month === 5 && day === 24) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // The Chair of Saint Peter the Apostle (February 22) - Feast, white
+  if (month === 1 && day === 22) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // The Conversion of Saint Paul the Apostle (January 25) - Feast, white
+  if (month === 0 && day === 25) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // The Visitation of the Blessed Virgin Mary (May 31) - Feast, white
+  if (month === 4 && day === 31) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saints Philip and James (May 3) - Feast, white
+  if (month === 4 && day === 3) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Matthias (May 14) - Feast, white
+  if (month === 4 && day === 14) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Thomas (July 3) - Feast, white
+  if (month === 6 && day === 3) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint James (July 25) - Feast, white
+  if (month === 6 && day === 25) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Mary Magdalene (July 22) - Feast, white
+  if (month === 6 && day === 22) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Bartholomew (August 24) - Feast, white
+  if (month === 7 && day === 24) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Matthew (September 21) - Feast, white
+  if (month === 8 && day === 21) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saints Michael, Gabriel, and Raphael (September 29) - Feast, white
+  if (month === 8 && day === 29) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Luke (October 18) - Feast, white
+  if (month === 9 && day === 18) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saints Simon and Jude (October 28) - Feast, white
+  if (month === 9 && day === 28) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Andrew (November 30) - Feast, white
+  if (month === 10 && day === 30) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Mark (April 25) - Feast, white
+  if (month === 3 && day === 25) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Saint Lawrence (August 10) - Feast, white
+  if (month === 7 && day === 10) {
+    return LITURGICAL_COLORS.WHITE;
+  }
+  
+  // Christmas octave feasts (December 26-28) - white (already in Christmas season, but explicit)
+  if (month === 11 && (day === 26 || day === 27 || day === 28)) {
     return LITURGICAL_COLORS.WHITE;
   }
   

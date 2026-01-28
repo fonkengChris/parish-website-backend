@@ -34,10 +34,13 @@ const generateTokens = (user) => {
 // Helper function to set secure cookie
 const setRefreshTokenCookie = (res, refreshToken) => {
   const isProduction = process.env.NODE_ENV === 'production';
+  // For cross-site scenarios (e.g., different domains/subdomains), use 'none'
+  // This requires secure: true (HTTPS only)
+  const sameSiteValue = isProduction ? 'none' : 'lax';
   res.cookie('refreshToken', refreshToken, {
     httpOnly: true,
-    secure: isProduction, // Only send over HTTPS in production
-    sameSite: isProduction ? 'strict' : 'lax',
+    secure: isProduction, // Only send over HTTPS in production (required for sameSite: 'none')
+    sameSite: sameSiteValue,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     path: '/api/auth'
   });
@@ -335,10 +338,11 @@ router.post('/logout', authenticate, async (req, res) => {
     }
 
     // Clear refresh token cookie
+    const isProduction = process.env.NODE_ENV === 'production';
     res.clearCookie('refreshToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       path: '/api/auth'
     });
 
