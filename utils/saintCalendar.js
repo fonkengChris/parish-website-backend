@@ -746,27 +746,10 @@ export function getUpcomingFeasts(days = 9) {
     
     const saints = getSaintsForDate(futureDate);
     
-    // Include days with:
-    // 1. Specific saints/feasts (type !== 'none' and type !== 'ordinary')
-    // 2. Sundays (important liturgical days)
-    // 3. Special liturgical days (even if type is 'none' but name indicates special day)
-    const isSunday = futureDate.getDay() === 0;
-    const isSpecialLiturgicalDay = saints[0] && (
-      saints[0].name.includes('Sunday') ||
-      saints[0].name.includes('Easter') ||
-      saints[0].name.includes('Lent') ||
-      saints[0].name.includes('Advent') ||
-      saints[0].name.includes('Christmas') ||
-      saints[0].name.includes('Palm') ||
-      saints[0].name.includes('Good Friday') ||
-      saints[0].name.includes('Pentecost') ||
-      saints[0].name.includes('Epiphany') ||
-      saints[0].name.includes('Ash Wednesday') ||
-      saints[0].name.includes('Holy Thursday') ||
-      saints[0].name.includes('Holy Saturday')
-    );
-    
-    if (saints.length > 0 && ((saints[0].type !== 'none' && saints[0].type !== 'ordinary') || isSunday || isSpecialLiturgicalDay)) {
+    // Include all days - return exactly the requested number of days
+    // This ensures we show the next N days of the liturgical calendar,
+    // including days that are just "Ordinary Time" weekdays
+    if (saints.length > 0) {
       upcoming.push({
         date: futureDate.toISOString().split('T')[0],
         timestamp: futureDate.toISOString(),
